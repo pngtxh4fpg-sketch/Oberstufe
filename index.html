@@ -5,40 +5,40 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Schulplaner">
-<meta name="theme-color" content="#1f3a5f">
+<meta name="theme-color" content="#0f766e">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Schulplaner</title>
 <style>
-:root{--bg:#eef0f3;--c:#fff;--t:#1b1f27;--m:#667085;--a:#1f3a5f;--ac:#fff;--b:#dfe3e8;--r:#c0392b;color-scheme:light dark}
-@media(prefers-color-scheme:dark){:root{--bg:#101318;--c:#1a1e25;--t:#e7e9ee;--m:#97a0ae;--a:#8fb4ee;--ac:#101318;--b:#2a303a;--r:#ef8a7e}}
+:root{--bg:#efefef;--c:#fff;--t:#1a1a1a;--m:#6b6b6b;--a:#0f766e;--ac:#fff;--b:#d2d2d2;--r:#b42318;color-scheme:light dark}
+@media(prefers-color-scheme:dark){:root{--bg:#121212;--c:#1c1c1c;--t:#ececec;--m:#9a9a9a;--a:#4fb3a9;--ac:#101010;--b:#343434;--r:#f08a80}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--t);font:16px/1.4 Georgia,"Iowan Old Style",serif;padding:env(safe-area-inset-top) env(safe-area-inset-right) calc(64px + env(safe-area-inset-bottom)) env(safe-area-inset-left)}
+body{margin:0;background:var(--bg);color:var(--t);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding:env(safe-area-inset-top) env(safe-area-inset-right) calc(56px + env(safe-area-inset-bottom)) env(safe-area-inset-left)}
 button,input,select,textarea{font:inherit;color:inherit}
-h2{font-size:1.1rem;margin:0 0 8px}h3{margin:0 0 10px}
+h2{font-size:.95rem;font-weight:600;margin:0 0 4px;padding-bottom:6px;border-bottom:1px solid var(--b)}h3{margin:0 0 10px}
 main{max-width:1100px;margin:0 auto;padding:12px}
 .cols{display:grid;grid-template-columns:1fr 1fr 1.1fr;gap:12px;align-items:start}
 @media(max-width:800px){.cols{grid-template-columns:1fr}.plan{order:-1}}
-.card{background:var(--c);border:1px solid var(--b);border-radius:8px;padding:12px;margin-bottom:12px}
-.nav{display:flex;align-items:center;gap:8px;margin-bottom:12px}.nav b{flex:1;text-align:center}
-button{background:var(--c);border:1px solid var(--b);border-radius:6px;padding:6px 12px;cursor:pointer}
+.card{background:var(--c);border:1px solid var(--b);border-radius:3px;padding:12px;margin-bottom:12px}
+.nav{display:flex;align-items:center;gap:8px;margin-bottom:12px}.nav b{flex:1;text-align:center;font-weight:600}
+button{background:none;border:1px solid var(--b);border-radius:3px;padding:6px 12px;cursor:pointer}
 button.p,button[type=submit]{background:var(--a);color:var(--ac);border-color:var(--a)}
 .row{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--b);cursor:pointer}
-.row:first-of-type{border-top:0}
+h2+.row{border-top:0}
 .tm{width:46px;line-height:1.1;font-variant-numeric:tabular-nums}.tm small{display:block;color:var(--m)}
 .g{flex:1}.g small{display:block;color:var(--m)}
 .x .g,.x .tm{text-decoration:line-through;opacity:.5}
 .x::after{content:"Entfällt";color:var(--r);font-size:.8rem}
-.m{color:var(--m);font-size:.85rem}.big{font-size:1.8rem;font-weight:bold}.w{color:var(--r)}
+.m{color:var(--m);font-size:.85rem}.big{font-size:1.6rem;font-weight:600}.w{color:var(--r)}
 .done{text-decoration:line-through;opacity:.5}
 nav.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--c);border-top:1px solid var(--b);padding-bottom:env(safe-area-inset-bottom)}
-nav.tabs button{flex:1;border:0;border-radius:0;padding:14px 0;background:none}
-nav.tabs .on{color:var(--a);font-weight:bold;box-shadow:inset 0 3px var(--a)}
+nav.tabs button{flex:1;border:0;border-radius:0;padding:14px 0;background:none;color:var(--m)}
+nav.tabs .on{color:var(--a);font-weight:600;box-shadow:inset 0 -2px var(--a)}
 table{border-collapse:collapse;width:100%;font-size:.78rem}td,th{border:1px solid var(--b);padding:4px;text-align:center;height:44px;cursor:pointer}
 #m{position:fixed;inset:0;background:#0008;display:flex;align-items:flex-end;justify-content:center;z-index:9}#m[hidden]{display:none}
-.md{background:var(--c);width:100%;max-width:480px;padding:16px;border-radius:12px 12px 0 0;max-height:90vh;overflow:auto}
+.md{background:var(--c);width:100%;max-width:480px;padding:16px;border-radius:6px 6px 0 0;max-height:90vh;overflow:auto}
 .md label{display:block;margin-bottom:10px;font-size:.9rem;color:var(--m)}
-.md input:not([type=checkbox]),.md select,.md textarea,input.f{display:block;width:100%;padding:8px;margin-top:2px;background:var(--bg);border:1px solid var(--b);border-radius:6px}
+.md input:not([type=checkbox]),.md select,.md textarea,input.f{display:block;width:100%;padding:8px;margin-top:2px;background:var(--bg);border:1px solid var(--b);border-radius:3px}
 .bt{display:flex;gap:8px}
 </style>
 </head>
@@ -92,11 +92,13 @@ function evForm(e){const v=e||{type:'sa',date:today,sid:''};form('Termin',[{k:'t
 function grForm(sid,g){const v=g||{t:'mk',w:1,date:today,sem:S.cfg.sem};form(esc(sn(sid))+', '+v.sem,[{k:'t',l:'Art',t:'sel',o:Object.entries(GT)},{k:'p',l:'Punkte (0 bis 15)',t:'number',x:'min=0 max=15 step=1 required'},{k:'w',l:'Gewicht (nur kleine Leistungsnachweise)',t:'number',x:'min=0.1 step=any required'},{k:'date',l:'Termindatum',t:'date'},{k:'ret',l:'Herausgabedatum',t:'date'},{k:'note',l:'Notiz',t:'area'}],v,o=>put('grades',{...v,...o,id:v.id||uid(),sid}),g&&(()=>rm('grades',g.id)))}
 function subForm(s){const v=s||{name:'',lk:false};form('Fach',[{k:'name',l:'Name',t:'text',x:'required'},{k:'lk',l:'Leistungsfach',t:'chk'}],v,o=>put('subjects',{...v,...o,id:v.id||uid()}),s&&(()=>rm('subjects',s.id)))}
 function slForm(day,p){const old=S.slots.find(x=>x.day==day&&x.p==p&&!x.d),v=old||{sid:'',room:''};form(`${DAYS[day]} ${T[p][0]}`,[{k:'sid',l:'Fach',t:'sel',o:[['','leer'],...subOpts()]},{k:'room',l:'Raum',t:'text'}],v,o=>o.sid?put('slots',{id:`p_${day}_${p}`,day,p,sid:o.sid,room:o.room}):old&&rm('slots',old.id))}
+function donut(){const sem=S.cfg.sem,m=avg(live('subjects').map(x=>half(x.id,sem).pts).filter(x=>x!=null)),C=2*Math.PI*52,f=n=>n.toFixed(2).replace('.',',');
+return `<div class=card><h2>Notenschnitt ${sem}</h2><svg viewBox="0 0 140 140" style="width:100%;max-width:200px;display:block;margin:8px auto 0"><circle cx=70 cy=70 r=52 fill=none style="stroke:var(--b)" stroke-width=14 /><circle cx=70 cy=70 r=52 fill=none style="stroke:var(--a)" stroke-width=14 stroke-dasharray="${m==null?0:m/15*C} ${C}" transform="rotate(-90 70 70)"/><text x=70 y=74 text-anchor=middle style="font-size:28px;font-weight:600;fill:var(--t)">${m==null?'-':f(Math.max(1,(17-m)/3))}</text><text x=70 y=94 text-anchor=middle style="font-size:10px;fill:var(--m)">${m==null?'keine Noten':f(m)+' / 15'}</text></svg></div>`}
 function vDay(){const wd=(new Date(cur+'T12:00').getDay()+6)%7,sl=wd<5?live('slots').filter(x=>x.day==wd).sort((a,b)=>a.p-b.p):[],cx=new Set(live('cancels').filter(x=>x.date==cur).map(x=>x.p)),
-hw=live('homework').filter(x=>x.date==cur),ev=live('events').filter(x=>x.date>=today).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,20),
+hw=live('homework').filter(x=>x.date==cur),ev=live('events').filter(x=>x.date>=today).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,5),
 open=live('homework').filter(x=>!x.done&&x.date<today).length;
 return `<div class=nav><button data-a="d" data-n="-1">&lt;</button><b>${fmt(cur)}${cur==today?' (heute)':''}</b><button data-a="d" data-n="1">&gt;</button><button data-a="d" data-n="0">Heute</button></div><div class=cols>
-<div class=card><h2>Termine</h2>${ev.map(e=>`<div class=row data-a="ev" data-id="${e.id}"><div class=g><b>${esc(e.title||EV[e.type])}</b><small>${EV[e.type]}${e.sid?', '+esc(sn(e.sid)):''}</small></div><span class=m>${fmt(e.date)}<br>${Math.round((new Date(e.date)-new Date(today))/864e5)} Tage</span></div>`).join('')||'<p class=m>Keine kommenden Termine.</p>'}<button class=p data-a="evn">Termin hinzufügen</button>${open?`<p class="m w">${open} offene Hausaufgaben aus vergangenen Tagen</p>`:''}</div>
+<div>${donut()}<div class=card><h2>Nächste Termine</h2>${ev.map(e=>`<div class=row data-a="ev" data-id="${e.id}"><div class=g><b>${esc(e.title||EV[e.type])}</b><small>${EV[e.type]}${e.sid?', '+esc(sn(e.sid)):''}</small></div><span class=m>${fmt(e.date)}<br>${Math.round((new Date(e.date)-new Date(today))/864e5)} Tage</span></div>`).join('')||'<p class=m>Keine kommenden Termine.</p>'}<button class=p data-a="evn">Termin hinzufügen</button>${open?`<p class="m w">${open} offene Hausaufgaben aus vergangenen Tagen</p>`:''}</div></div>
 <div class=card><h2>Hausaufgaben</h2>${hw.map(h=>`<div class=row data-a="hw" data-id="${h.id}"><input type=checkbox data-a="hd" data-id="${h.id}"${h.done?' checked':''}><div class="g ${h.done?'done':''}"><b>${esc(sn(h.sid))}</b><small>${esc(h.text)}</small></div></div>`).join('')||'<p class=m>Keine Hausaufgaben für diesen Tag.</p>'}<button class=p data-a="hwn">Hausaufgabe hinzufügen</button></div>
 <div class="card plan"><h2>Stundenplan</h2>${sl.map(s=>`<div class="row ${cx.has(s.p)?'x':''}" data-a="cx" data-p="${s.p}"><span class=tm><b>${T[s.p][0]}</b><small>${T[s.p][1]}</small></span><div class=g><b>${esc(sn(s.sid))}</b><small>${esc(s.room)}</small></div></div>`).join('')||'<p class=m>Kein Unterricht.</p>'}<p class=m>Tippen markiert eine Stunde als entfallen, nur für dieses Datum.</p></div></div>`}
 function vGr(){const sem=S.cfg.sem,hs=live('subjects').map(s=>({s,h:half(s.id,sem)})),ps=hs.filter(x=>x.h.pts!=null).map(x=>x.h.pts),m=avg(ps);
