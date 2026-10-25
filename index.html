@@ -117,7 +117,7 @@ case'cx':{const cid=`c_${cur}_${d.p}`,c=S.cancels.find(x=>x.id==cid);c&&!c.d?rm(
 case'hwn':hwForm();break;case'hw':hwForm(get('homework'));break;case'evn':evForm();break;case'ev':evForm(get('events'));break;
 case'grn':grForm(id);break;case'gr':{const g=get('grades');grForm(g.sid,g);break}
 case'sbn':subForm();break;case'sb':subForm(get('subjects'));break;case'sl':slForm(+d.d,+d.p);break;
-case'in':case'up':{const em=$('#em').value,pw=$('#pw').value;const r=d.a=='in'?await sb.auth.signInWithPassword({email:em,password:pw}):await sb.auth.signUp({email:em,password:pw});st=r.error?'Fehler: '+r.error.message:(d.a=='up'?'Registriert. Bestätige ggf. die E-Mail, dann anmelden.':'Angemeldet');document.activeElement.blur();render();sync();break}
+case'in':case'up':{const em=$('#em').value,pw=$('#pw').value;const r=d.a=='in'?await sb.auth.signInWithPassword({email:em,password:pw}):await sb.auth.signUp({email:em,password:pw});st=r.error?'Fehler: '+r.error.message:(d.a=='up'?'Registriert. Bestätige ggf. die E-Mail, dann anmelden.':'Angemeldet');document.activeElement.blur();render();if(r.data?.session)sync();break}
 case'out':await sb.auth.signOut();st='Nicht angemeldet';render();break;case'sy':sync();break}});
 document.addEventListener('change',e=>{if(e.target.dataset.a=='sem'){S.cfg={sem:e.target.value,u:Date.now()};save()}});
 if(window.supabase&&window.CFG&&CFG.url){sb=supabase.createClient(CFG.url,CFG.key);sb.auth.onAuthStateChange(()=>setTimeout(sync,0))}
