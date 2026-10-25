@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Schulplaner">
+<meta name="theme-color" content="#1f3a5f">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Schulplaner</title>
+<style>
+:root{--bg:#eef0f3;--c:#fff;--t:#1b1f27;--m:#667085;--a:#1f3a5f;--ac:#fff;--b:#dfe3e8;--r:#c0392b;color-scheme:light dark}
+@media(prefers-color-scheme:dark){:root{--bg:#101318;--c:#1a1e25;--t:#e7e9ee;--m:#97a0ae;--a:#8fb4ee;--ac:#101318;--b:#2a303a;--r:#ef8a7e}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--t);font:16px/1.4 Georgia,"Iowan Old Style",serif;padding:env(safe-area-inset-top) env(safe-area-inset-right) calc(64px + env(safe-area-inset-bottom)) env(safe-area-inset-left)}
+button,input,select,textarea{font:inherit;color:inherit}
+h2{font-size:1.1rem;margin:0 0 8px}h3{margin:0 0 10px}
+main{max-width:1100px;margin:0 auto;padding:12px}
+.cols{display:grid;grid-template-columns:1fr 1fr 1.1fr;gap:12px;align-items:start}
+@media(max-width:800px){.cols{grid-template-columns:1fr}.plan{order:-1}}
+.card{background:var(--c);border:1px solid var(--b);border-radius:8px;padding:12px;margin-bottom:12px}
+.nav{display:flex;align-items:center;gap:8px;margin-bottom:12px}.nav b{flex:1;text-align:center}
+button{background:var(--c);border:1px solid var(--b);border-radius:6px;padding:6px 12px;cursor:pointer}
+button.p,button[type=submit]{background:var(--a);color:var(--ac);border-color:var(--a)}
+.row{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--b);cursor:pointer}
+.row:first-of-type{border-top:0}
+.tm{width:46px;line-height:1.1;font-variant-numeric:tabular-nums}.tm small{display:block;color:var(--m)}
+.g{flex:1}.g small{display:block;color:var(--m)}
+.x .g,.x .tm{text-decoration:line-through;opacity:.5}
+.x::after{content:"Entfällt";color:var(--r);font-size:.8rem}
+.m{color:var(--m);font-size:.85rem}.big{font-size:1.8rem;font-weight:bold}.w{color:var(--r)}
+.done{text-decoration:line-through;opacity:.5}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--c);border-top:1px solid var(--b);padding-bottom:env(safe-area-inset-bottom)}
+nav.tabs button{flex:1;border:0;border-radius:0;padding:14px 0;background:none}
+nav.tabs .on{color:var(--a);font-weight:bold;box-shadow:inset 0 3px var(--a)}
+table{border-collapse:collapse;width:100%;font-size:.78rem}td,th{border:1px solid var(--b);padding:4px;text-align:center;height:44px;cursor:pointer}
+#m{position:fixed;inset:0;background:#0008;display:flex;align-items:flex-end;justify-content:center;z-index:9}#m[hidden]{display:none}
+.md{background:var(--c);width:100%;max-width:480px;padding:16px;border-radius:12px 12px 0 0;max-height:90vh;overflow:auto}
+.md label{display:block;margin-bottom:10px;font-size:.9rem;color:var(--m)}
+.md input:not([type=checkbox]),.md select,.md textarea,input.f{display:block;width:100%;padding:8px;margin-top:2px;background:var(--bg);border:1px solid var(--b);border-radius:6px}
+.bt{display:flex;gap:8px}
+</style>
+</head>
+<body>
+<main id="v"></main>
+<nav class="tabs"><button data-a="tab" data-v="day">Tag</button><button data-a="tab" data-v="gr">Noten</button><button data-a="tab" data-v="ed">Bearbeiten</button></nav>
+<div id="m" hidden></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script>
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const T=[["07:50","08:35"],["08:35","09:20"],["09:20","10:05"],["10:25","11:10"],["11:10","11:55"],["11:55","12:40"],["13:00","13:45"],["13:45","14:30"],["14:30","15:15"],["15:15","16:00"]];
+const DAYS=['Mo','Di','Mi','Do','Fr'],SEMS=['12/1','12/2','13/1','13/2'];
+const EV={sa:'Schulaufgabe',ex:'Stegreifaufgabe / KASL',ref:'Referat',ab:'Abgabe',so:'Sonstiges'};
+const GT={sa:'Schulaufgabe',mk:'Klein mündlich',sk:'Klein schriftlich'};
+const NOTE=['6','5-','5','5+','4-','4','4+','3-','3','3+','2-','2','2+','1-','1','1+'];
+const PLAN=["1M3|ME_11,1g1|MU_10,1ku2|HE_11,3inf_12|Cp2,1smw1|Sp1,1smw1|Sp1,,,,",
+"1WR5|HO_23,1D3|ME_01,1M3|ME_14,1M3|ME_14,1pug1|ME_09,1ph1|ME_12,,1e2|ME_02,1W_PH6|ME_12,1W_PH6|ME_12",
+"1WR5|HO_23,1ku2|HE_11,1e2|ME_02,1g1|MU_10,1D3|HO_01,1D3|HO_01,,,,",
+"1ph1|ME_14,1ph1|ME_14,1k3|HE_08,1D3|HO_23,1e2|ME_02,1pug1|ME_09,,,1vkm1|HO_03,1vkm1|HO_03",
+"3inf_12|Cp2,3inf_12|Cp2,1WR5|HO_23,1WR5|HO_23,1M3|ME_11,1k3|HE_08,,,,"];
+const K=['subjects','slots','cancels','grades','homework','events'];
+function seed(){const s={cfg:{sem:'12/1',u:1}};K.forEach(k=>s[k]=[]);const seen={};
+PLAN.forEach((d,di)=>d.split(',').forEach((c,p)=>{if(!c)return;const[code,room]=c.split('|'),id='s_'+code;
+if(!seen[id]){seen[id]=1;s.subjects.push({id,name:code,lk:false,u:1})}
+s.slots.push({id:`p_${di}_${p}`,day:di,p,sid:id,room,u:1})}));return s}
+let S=JSON.parse(localStorage.getItem('sp')||'null')||seed(),tab='day',st='Nicht angemeldet',sb=null,tm;
+const iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+const today=iso(new Date());let cur=today;
+const fmt=d=>d?new Date(d+'T12:00').toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'}):'';
+const live=k=>S[k].filter(x=>!x.d),uid=()=>Math.random().toString(36).slice(2,10),sn=id=>S.subjects.find(x=>x.id==id)?.name||'?';
+const persist=()=>localStorage.setItem('sp',JSON.stringify(S));
+function save(){persist();clearTimeout(tm);tm=setTimeout(sync,1500);render()}
+function put(k,o){o.u=Date.now();const i=S[k].findIndex(x=>x.id==o.id);i<0?S[k].push(o):S[k][i]=o;save()}
+function rm(k,id){const o=S[k].find(x=>x.id==id);if(o){o.d=1;o.u=Date.now();save()}}
+function merge(a,b){K.forEach(k=>{const m=new Map(a[k].map(x=>[x.id,x]));(b[k]||[]).forEach(x=>{const y=m.get(x.id);if(!y||x.u>y.u)m.set(x.id,x)});a[k]=[...m.values()]});if((b.cfg?.u||0)>a.cfg.u)a.cfg=b.cfg}
+async function sync(){if(!sb||!navigator.onLine)return;try{const{data:{session}}=await sb.auth.getSession();if(!session){st='Nicht angemeldet';return render()}
+const r=await sb.from('app_state').select('data').eq('user_id',session.user.id).maybeSingle();if(r.error)throw r.error;if(r.data)merge(S,r.data.data);persist();
+const w=await sb.from('app_state').upsert({user_id:session.user.id,data:S,updated_at:new Date().toISOString()});if(w.error)throw w.error;
+st='Synchronisiert um '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' ('+session.user.email+')'}catch(e){st='Sync Fehler: '+e.message}render()}
+const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+function half(sid,sem){const g=live('grades').filter(x=>x.sid==sid&&x.sem==sem),sa=g.filter(x=>x.t=='sa'),kl=g.filter(x=>x.t!='sa');
+const w=kl.reduce((s,x)=>s+x.w,0),ka=w?kl.reduce((s,x)=>s+x.p*x.w,0)/w:null,p=[avg(sa.map(x=>x.p)),ka].filter(v=>v!==null);
+if(!p.length)return{g,nk:0,nm:0};const raw=avg(p);return{g,raw,pts:raw<1?0:Math.round(raw),ka,nk:kl.length,nm:kl.filter(x=>x.t=='mk').length}}
+function form(title,F,v,ok,del){const m=$('#m');m.innerHTML=`<div class=md><form><h3>${title}</h3>${F.map(f=>`<label>${f.l}${f.t=='sel'?`<select name=${f.k}>${f.o.map(o=>`<option value="${o[0]}"${o[0]==v[f.k]?' selected':''}>${esc(o[1])}</option>`).join('')}</select>`:f.t=='chk'?` <input type=checkbox name=${f.k}${v[f.k]?' checked':''}>`:f.t=='area'?`<textarea name=${f.k}>${esc(v[f.k])}</textarea>`:`<input name=${f.k} type=${f.t} ${f.x||''} value="${esc(v[f.k])}">`}</label>`).join('')}<div class=bt><button type=submit>Speichern</button>${del?'<button type=button class=dn>Löschen</button>':''}<button type=button class=cn>Abbrechen</button></div></form></div>`;
+m.hidden=false;const fm=m.querySelector('form'),close=()=>m.hidden=true;fm.onsubmit=e=>{e.preventDefault();const o={};F.forEach(f=>{const el=fm.elements[f.k];o[f.k]=f.t=='chk'?el.checked:f.t=='number'?parseFloat(el.value):el.value});close();ok(o)};
+m.querySelector('.cn').onclick=close;if(del)m.querySelector('.dn').onclick=()=>{close();del()}}
+const subOpts=()=>live('subjects').map(s=>[s.id,s.name]);
+function hwForm(h){const v=h||{date:cur,sid:subOpts()[0]?.[0]};form('Hausaufgabe',[{k:'sid',l:'Fach',t:'sel',o:subOpts()},{k:'text',l:'Aufgabe',t:'area'},{k:'date',l:'Datum',t:'date'}],v,o=>put('homework',{...v,...o,id:v.id||uid()}),h&&(()=>rm('homework',h.id)))}
+function evForm(e){const v=e||{type:'sa',date:today,sid:''};form('Termin',[{k:'type',l:'Art',t:'sel',o:Object.entries(EV)},{k:'sid',l:'Fach',t:'sel',o:[['','ohne Fach'],...subOpts()]},{k:'title',l:'Titel oder Thema',t:'text'},{k:'date',l:'Datum',t:'date',x:'required'}],v,o=>put('events',{...v,...o,id:v.id||uid()}),e&&(()=>rm('events',e.id)))}
+function grForm(sid,g){const v=g||{t:'mk',w:1,date:today,sem:S.cfg.sem};form(esc(sn(sid))+', '+v.sem,[{k:'t',l:'Art',t:'sel',o:Object.entries(GT)},{k:'p',l:'Punkte (0 bis 15)',t:'number',x:'min=0 max=15 step=1 required'},{k:'w',l:'Gewicht (nur kleine Leistungsnachweise)',t:'number',x:'min=0.1 step=any required'},{k:'date',l:'Termindatum',t:'date'},{k:'ret',l:'Herausgabedatum',t:'date'},{k:'note',l:'Notiz',t:'area'}],v,o=>put('grades',{...v,...o,id:v.id||uid(),sid}),g&&(()=>rm('grades',g.id)))}
+function subForm(s){const v=s||{name:'',lk:false};form('Fach',[{k:'name',l:'Name',t:'text',x:'required'},{k:'lk',l:'Leistungsfach',t:'chk'}],v,o=>put('subjects',{...v,...o,id:v.id||uid()}),s&&(()=>rm('subjects',s.id)))}
+function slForm(day,p){const old=S.slots.find(x=>x.day==day&&x.p==p&&!x.d),v=old||{sid:'',room:''};form(`${DAYS[day]} ${T[p][0]}`,[{k:'sid',l:'Fach',t:'sel',o:[['','leer'],...subOpts()]},{k:'room',l:'Raum',t:'text'}],v,o=>o.sid?put('slots',{id:`p_${day}_${p}`,day,p,sid:o.sid,room:o.room}):old&&rm('slots',old.id))}
+function vDay(){const wd=(new Date(cur+'T12:00').getDay()+6)%7,sl=wd<5?live('slots').filter(x=>x.day==wd).sort((a,b)=>a.p-b.p):[],cx=new Set(live('cancels').filter(x=>x.date==cur).map(x=>x.p)),
+hw=live('homework').filter(x=>x.date==cur),ev=live('events').filter(x=>x.date>=today).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,20),
+open=live('homework').filter(x=>!x.done&&x.date<today).length;
+return `<div class=nav><button data-a="d" data-n="-1">&lt;</button><b>${fmt(cur)}${cur==today?' (heute)':''}</b><button data-a="d" data-n="1">&gt;</button><button data-a="d" data-n="0">Heute</button></div><div class=cols>
+<div class=card><h2>Termine</h2>${ev.map(e=>`<div class=row data-a="ev" data-id="${e.id}"><div class=g><b>${esc(e.title||EV[e.type])}</b><small>${EV[e.type]}${e.sid?', '+esc(sn(e.sid)):''}</small></div><span class=m>${fmt(e.date)}<br>${Math.round((new Date(e.date)-new Date(today))/864e5)} Tage</span></div>`).join('')||'<p class=m>Keine kommenden Termine.</p>'}<button class=p data-a="evn">Termin hinzufügen</button>${open?`<p class="m w">${open} offene Hausaufgaben aus vergangenen Tagen</p>`:''}</div>
+<div class=card><h2>Hausaufgaben</h2>${hw.map(h=>`<div class=row data-a="hw" data-id="${h.id}"><input type=checkbox data-a="hd" data-id="${h.id}"${h.done?' checked':''}><div class="g ${h.done?'done':''}"><b>${esc(sn(h.sid))}</b><small>${esc(h.text)}</small></div></div>`).join('')||'<p class=m>Keine Hausaufgaben für diesen Tag.</p>'}<button class=p data-a="hwn">Hausaufgabe hinzufügen</button></div>
+<div class="card plan"><h2>Stundenplan</h2>${sl.map(s=>`<div class="row ${cx.has(s.p)?'x':''}" data-a="cx" data-p="${s.p}"><span class=tm><b>${T[s.p][0]}</b><small>${T[s.p][1]}</small></span><div class=g><b>${esc(sn(s.sid))}</b><small>${esc(s.room)}</small></div></div>`).join('')||'<p class=m>Kein Unterricht.</p>'}<p class=m>Tippen markiert eine Stunde als entfallen, nur für dieses Datum.</p></div></div>`}
+function vGr(){const sem=S.cfg.sem,hs=live('subjects').map(s=>({s,h:half(s.id,sem)})),ps=hs.filter(x=>x.h.pts!=null).map(x=>x.h.pts),m=avg(ps);
+return `<div class=nav><b>Halbjahr</b><select class=f data-a="sem" style="width:auto">${SEMS.map(x=>`<option${x==sem?' selected':''}>${x}</option>`).join('')}</select></div>
+<div class=card><div class=m>Durchschnitt der Halbjahresleistungen ${sem}</div><div class=big>${m==null?'noch keine Daten':m.toFixed(2)+' Punkte'}</div>${m==null?'':`<div class=m>Notenschnitt (Näherung): ${((17-m)/3).toFixed(2)}</div>`}</div>
+<div class=cols style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">${hs.map(({s,h})=>`<div class=card><div class=row style="border:0;cursor:default"><div class=g><b>${esc(s.name)}</b>${s.lk?' <span class=m>LF</span>':''}<small>${h.raw!=null?'berechnet '+h.raw.toFixed(2):'ohne Einträge'}</small></div><div class=big>${h.pts??'-'} <span class=m>${h.pts!=null?NOTE[h.pts]:''}</span></div></div>
+${h.g.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(g=>`<div class=row data-a="gr" data-id="${g.id}"><div class=g><b>${g.p} Punkte</b> <span class=m>${GT[g.t]}${g.t!='sa'?', Gewicht '+g.w:''}</span><small>${g.date?'Termin '+fmt(g.date):''}${g.ret?', Herausgabe '+fmt(g.ret):''}${g.note?' ('+esc(g.note)+')':''}</small></div></div>`).join('')}
+${(h.nk<2||h.nm<1)?'<p class="m w">Pflicht: mindestens 2 kleine Leistungsnachweise, davon 1 mündlich.</p>':''}<button class=p data-a="grn" data-id="${s.id}">Eintrag hinzufügen</button></div>`).join('')}</div>`}
+function vEd(){return `<div class=card><h2>Account und Sync</h2>${sb?`<p class=m>${esc(st)}</p><input class=f id=em type=email placeholder="E-Mail"><input class=f id=pw type=password placeholder="Passwort" style="margin:6px 0"><div class=bt><button class=p data-a="in">Anmelden</button><button data-a="up">Registrieren</button><button data-a="out">Abmelden</button><button data-a="sy">Sync</button></div>`:'<p class=m>Supabase ist nicht eingerichtet (config.js). Die App läuft lokal.</p>'}</div>
+<div class=card><h2>Fächer</h2>${live('subjects').map(s=>`<div class=row data-a="sb" data-id="${s.id}"><div class=g>${esc(s.name)}${s.lk?' (Leistungsfach)':''}</div></div>`).join('')}<button class=p data-a="sbn">Fach hinzufügen</button></div>
+<div class=card><h2>Stundenplan bearbeiten</h2><table><tr><th></th>${DAYS.map(d=>`<th>${d}</th>`).join('')}</tr>${T.map((t,p)=>`<tr><th>${t[0]}</th>${DAYS.map((_,d)=>{const s=live('slots').find(x=>x.day==d&&x.p==p);return `<td data-a="sl" data-d="${d}" data-p="${p}">${s?esc(sn(s.sid))+'<br>'+esc(s.room):''}</td>`}).join('')}</tr>`).join('')}</table></div>`}
+function render(){const a=document.activeElement;if(a&&a.id&&/^(em|pw)$/.test(a.id))return;$('#v').innerHTML={day:vDay,gr:vGr,ed:vEd}[tab]();document.querySelectorAll('nav .on').forEach(b=>b.classList.remove('on'));document.querySelector(`nav [data-v=${tab}]`).classList.add('on')}
+document.addEventListener('click',async e=>{const el=e.target.closest('[data-a]');if(!el||el.tagName=='SELECT')return;const d=el.dataset,id=d.id,get=k=>S[k].find(x=>x.id==id);
+if(el.type=='checkbox'){e.stopPropagation();const h=get('homework');put('homework',{...h,done:el.checked});return}
+switch(d.a){case'tab':tab=d.v;render();break;
+case'd':{if(d.n=='0')cur=today;else{const x=new Date(cur+'T12:00');x.setDate(x.getDate()+ +d.n);cur=iso(x)}render();break}
+case'cx':{const cid=`c_${cur}_${d.p}`,c=S.cancels.find(x=>x.id==cid);c&&!c.d?rm('cancels',cid):put('cancels',{id:cid,date:cur,p:+d.p});break}
+case'hwn':hwForm();break;case'hw':hwForm(get('homework'));break;case'evn':evForm();break;case'ev':evForm(get('events'));break;
+case'grn':grForm(id);break;case'gr':{const g=get('grades');grForm(g.sid,g);break}
+case'sbn':subForm();break;case'sb':subForm(get('subjects'));break;case'sl':slForm(+d.d,+d.p);break;
+case'in':case'up':{const em=$('#em').value,pw=$('#pw').value;const r=d.a=='in'?await sb.auth.signInWithPassword({email:em,password:pw}):await sb.auth.signUp({email:em,password:pw});st=r.error?'Fehler: '+r.error.message:(d.a=='up'?'Registriert. Bestätige ggf. die E-Mail, dann anmelden.':'Angemeldet');document.activeElement.blur();render();sync();break}
+case'out':await sb.auth.signOut();st='Nicht angemeldet';render();break;case'sy':sync();break}});
+document.addEventListener('change',e=>{if(e.target.dataset.a=='sem'){S.cfg={sem:e.target.value,u:Date.now()};save()}});
+if(window.supabase&&window.CFG&&CFG.url){sb=supabase.createClient(CFG.url,CFG.key);sb.auth.onAuthStateChange(()=>setTimeout(sync,0))}
+addEventListener('online',sync);document.addEventListener('visibilitychange',()=>!document.hidden&&sync());
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
+render();sync();
+</script>
+</body>
+</html>
