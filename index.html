@@ -39,7 +39,7 @@ table{border-collapse:collapse;width:100%;font-size:.78rem}td,th{border:1px soli
 .md{background:var(--c);width:100%;max-width:480px;padding:16px;border-radius:6px 6px 0 0;max-height:90vh;overflow:auto}
 .md label{display:block;margin-bottom:10px;font-size:.9rem;color:var(--m)}
 .md input:not([type=checkbox]),.md select,.md textarea,input.f{display:block;width:100%;padding:8px;margin-top:2px;background:var(--bg);border:1px solid var(--b);border-radius:3px}
-.bt{display:flex;gap:8px}
+.bt{display:flex;gap:8px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -55,16 +55,8 @@ const DAYS=['Mo','Di','Mi','Do','Fr'],SEMS=['12/1','12/2','13/1','13/2'];
 const EV={sa:'Schulaufgabe',ex:'Stegreifaufgabe / KASL',ref:'Referat',ab:'Abgabe',so:'Sonstiges'};
 const GT={sa:'Schulaufgabe',mk:'Klein mündlich',sk:'Klein schriftlich'};
 const NOTE=['6','5-','5','5+','4-','4','4+','3-','3','3+','2-','2','2+','1-','1','1+'];
-const PLAN=["1M3|ME_11,1g1|MU_10,1ku2|HE_11,3inf_12|Cp2,1smw1|Sp1,1smw1|Sp1,,,,",
-"1WR5|HO_23,1D3|ME_01,1M3|ME_14,1M3|ME_14,1pug1|ME_09,1ph1|ME_12,,1e2|ME_02,1W_PH6|ME_12,1W_PH6|ME_12",
-"1WR5|HO_23,1ku2|HE_11,1e2|ME_02,1g1|MU_10,1D3|HO_01,1D3|HO_01,,,,",
-"1ph1|ME_14,1ph1|ME_14,1k3|HE_08,1D3|HO_23,1e2|ME_02,1pug1|ME_09,,,1vkm1|HO_03,1vkm1|HO_03",
-"3inf_12|Cp2,3inf_12|Cp2,1WR5|HO_23,1WR5|HO_23,1M3|ME_11,1k3|HE_08,,,,"];
 const K=['subjects','slots','cancels','grades','homework','events'];
-function seed(){const s={cfg:{sem:'12/1',u:1}};K.forEach(k=>s[k]=[]);const seen={};
-PLAN.forEach((d,di)=>d.split(',').forEach((c,p)=>{if(!c)return;const[code,room]=c.split('|'),id='s_'+code;
-if(!seen[id]){seen[id]=1;s.subjects.push({id,name:code,lk:false,u:1})}
-s.slots.push({id:`p_${di}_${p}`,day:di,p,sid:id,room,u:1})}));return s}
+function seed(){const s={cfg:{sem:'12/1',u:1}};K.forEach(k=>s[k]=[]);return s}
 let S=JSON.parse(localStorage.getItem('sp')||'null')||seed(),tab='day',st='Nicht angemeldet',sb=null,tm;
 const iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
 const today=iso(new Date());let cur=today;
@@ -75,7 +67,7 @@ function save(){persist();clearTimeout(tm);tm=setTimeout(sync,1500);render()}
 function put(k,o){o.u=Date.now();const i=S[k].findIndex(x=>x.id==o.id);i<0?S[k].push(o):S[k][i]=o;save()}
 function rm(k,id){const o=S[k].find(x=>x.id==id);if(o){o.d=1;o.u=Date.now();save()}}
 function merge(a,b){K.forEach(k=>{const m=new Map(a[k].map(x=>[x.id,x]));(b[k]||[]).forEach(x=>{const y=m.get(x.id);if(!y||x.u>y.u)m.set(x.id,x)});a[k]=[...m.values()]});if((b.cfg?.u||0)>a.cfg.u)a.cfg=b.cfg}
-async function sync(){if(!sb||!navigator.onLine)return;try{const{data:{session}}=await sb.auth.getSession();if(!session){st='Nicht angemeldet';return render()}
+async function sync(){if(!sb||!navigator.onLine)return;try{const{data:{session}}=await sb.auth.getSession();if(!session){st='Nicht angemeldet';return render()}if(S.uid&&S.uid!==session.user.id)S=seed();S.uid=session.user.id;
 const r=await sb.from('app_state').select('data').eq('user_id',session.user.id).maybeSingle();if(r.error)throw r.error;if(r.data)merge(S,r.data.data);persist();
 const w=await sb.from('app_state').upsert({user_id:session.user.id,data:S,updated_at:new Date().toISOString()});if(w.error)throw w.error;
 st='Synchronisiert um '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' ('+session.user.email+')'}catch(e){st='Sync Fehler: '+e.message}render()}
@@ -100,18 +92,18 @@ open=live('homework').filter(x=>!x.done&&x.date<today).length;
 return `<div class=nav><button data-a="d" data-n="-1">&lt;</button><b>${fmt(cur)}${cur==today?' (heute)':''}</b><button data-a="d" data-n="1">&gt;</button><button data-a="d" data-n="0">Heute</button></div><div class=cols>
 <div>${donut()}<div class=card><h2>Nächste Termine</h2>${ev.map(e=>`<div class=row data-a="ev" data-id="${e.id}"><div class=g><b>${esc(e.title||EV[e.type])}</b><small>${EV[e.type]}${e.sid?', '+esc(sn(e.sid)):''}</small></div><span class=m>${fmt(e.date)}<br>${Math.round((new Date(e.date)-new Date(today))/864e5)} Tage</span></div>`).join('')||'<p class=m>Keine kommenden Termine.</p>'}<button class=p data-a="evn">Termin hinzufügen</button>${open?`<p class="m w">${open} offene Hausaufgaben aus vergangenen Tagen</p>`:''}</div></div>
 <div class=card><h2>Hausaufgaben</h2>${hw.map(h=>`<div class=row data-a="hw" data-id="${h.id}"><input type=checkbox data-a="hd" data-id="${h.id}"${h.done?' checked':''}><div class="g ${h.done?'done':''}"><b>${esc(sn(h.sid))}</b><small>${esc(h.text)}</small></div></div>`).join('')||'<p class=m>Keine Hausaufgaben für diesen Tag.</p>'}<button class=p data-a="hwn">Hausaufgabe hinzufügen</button></div>
-<div class="card plan"><h2>Stundenplan</h2>${sl.map(s=>`<div class="row ${cx.has(s.p)?'x':''}" data-a="cx" data-p="${s.p}"><span class=tm><b>${T[s.p][0]}</b><small>${T[s.p][1]}</small></span><div class=g><b>${esc(sn(s.sid))}</b><small>${esc(s.room)}</small></div></div>`).join('')||'<p class=m>Kein Unterricht.</p>'}<p class=m>Tippen markiert eine Stunde als entfallen, nur für dieses Datum.</p></div></div>`}
+<div class="card plan"><h2>Stundenplan</h2>${sl.map(s=>`<div class="row ${cx.has(s.p)?'x':''}" data-a="cx" data-p="${s.p}"><span class=tm><b>${T[s.p][0]}</b><small>${T[s.p][1]}</small></span><div class=g><b>${esc(sn(s.sid))}</b><small>${esc(s.room)}</small></div></div>`).join('')||(live('slots').length?'<p class=m>Kein Unterricht.</p>':'<p class=m>Noch kein Stundenplan. Lege unter Bearbeiten zuerst Fächer an und trage sie dann in den Stundenplan ein.</p>')}<p class=m>Tippen markiert eine Stunde als entfallen, nur für dieses Datum.</p></div></div>`}
 function vGr(){const sem=S.cfg.sem,hs=live('subjects').map(s=>({s,h:half(s.id,sem)})),ps=hs.filter(x=>x.h.pts!=null).map(x=>x.h.pts),m=avg(ps);
 return `<div class=nav><b>Halbjahr</b><select class=f data-a="sem" style="width:auto">${SEMS.map(x=>`<option${x==sem?' selected':''}>${x}</option>`).join('')}</select></div>
 <div class=card><div class=m>Durchschnitt der Halbjahresleistungen ${sem}</div><div class=big>${m==null?'noch keine Daten':m.toFixed(2)+' Punkte'}</div>${m==null?'':`<div class=m>Notenschnitt (Näherung): ${((17-m)/3).toFixed(2)}</div>`}</div>
 <div class=cols style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">${hs.map(({s,h})=>`<div class=card><div class=row style="border:0;cursor:default"><div class=g><b>${esc(s.name)}</b>${s.lk?' <span class=m>LF</span>':''}<small>${h.raw!=null?'berechnet '+h.raw.toFixed(2):'ohne Einträge'}</small></div><div class=big>${h.pts??'-'} <span class=m>${h.pts!=null?NOTE[h.pts]:''}</span></div></div>
 ${h.g.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(g=>`<div class=row data-a="gr" data-id="${g.id}"><div class=g><b>${g.p} Punkte</b> <span class=m>${GT[g.t]}${g.t!='sa'?', Gewicht '+g.w:''}</span><small>${g.date?'Termin '+fmt(g.date):''}${g.ret?', Herausgabe '+fmt(g.ret):''}${g.note?' ('+esc(g.note)+')':''}</small></div></div>`).join('')}
 ${(h.nk<2||h.nm<1)?'<p class="m w">Pflicht: mindestens 2 kleine Leistungsnachweise, davon 1 mündlich.</p>':''}<button class=p data-a="grn" data-id="${s.id}">Eintrag hinzufügen</button></div>`).join('')}</div>`}
-function vEd(){return `<div class=card><h2>Account und Sync</h2>${sb?`<p class=m>${esc(st)}</p><input class=f id=em type=email placeholder="E-Mail"><input class=f id=pw type=password placeholder="Passwort" style="margin:6px 0"><div class=bt><button class=p data-a="in">Anmelden</button><button data-a="up">Registrieren</button><button data-a="out">Abmelden</button><button data-a="sy">Sync</button></div>`:'<p class=m>Supabase ist nicht eingerichtet (config.js). Die App läuft lokal.</p>'}</div>
+function vEd(){return `<div class=card><h2>Account und Sync</h2>${sb?`<p class=m>${esc(st)}</p><input class=f id=em type=email placeholder="E-Mail"><input class=f id=pw type=password placeholder="Passwort" style="margin:6px 0"><div class=bt><button class=p data-a="in">Anmelden</button><button data-a="up">Registrieren</button><button data-a="out">Abmelden</button><button data-a="sy">Sync</button><button data-a="fg">Passwort vergessen</button><button data-a="dl">Daten löschen</button></div>`:'<p class=m>Ohne Anmeldung bleiben die Daten nur auf diesem Gerät.</p><p class=m>Supabase ist nicht eingerichtet (config.js). Die App läuft lokal.</p>'}</div>
 <div class=card><h2>Fächer</h2>${live('subjects').map(s=>`<div class=row data-a="sb" data-id="${s.id}"><div class=g>${esc(s.name)}${s.lk?' (Leistungsfach)':''}</div></div>`).join('')}<button class=p data-a="sbn">Fach hinzufügen</button></div>
 <div class=card><h2>Stundenplan bearbeiten</h2><table><tr><th></th>${DAYS.map(d=>`<th>${d}</th>`).join('')}</tr>${T.map((t,p)=>`<tr><th>${t[0]}</th>${DAYS.map((_,d)=>{const s=live('slots').find(x=>x.day==d&&x.p==p);return `<td data-a="sl" data-d="${d}" data-p="${p}">${s?esc(sn(s.sid))+'<br>'+esc(s.room):''}</td>`}).join('')}</tr>`).join('')}</table></div>`}
 function render(){const a=document.activeElement;if(a&&a.id&&/^(em|pw)$/.test(a.id))return;$('#v').innerHTML={day:vDay,gr:vGr,ed:vEd}[tab]();document.querySelectorAll('nav .on').forEach(b=>b.classList.remove('on'));document.querySelector(`nav [data-v=${tab}]`).classList.add('on')}
-document.addEventListener('click',async e=>{const el=e.target.closest('[data-a]');if(!el||el.tagName=='SELECT')return;const d=el.dataset,id=d.id,get=k=>S[k].find(x=>x.id==id);
+document.addEventListener('click',async e=>{const el=e.target.closest('[data-a]');if(!el||el.tagName=='SELECT')return;if(['em','pw'].includes(document.activeElement?.id))document.activeElement.blur();const d=el.dataset,id=d.id,get=k=>S[k].find(x=>x.id==id);
 if(el.type=='checkbox'){e.stopPropagation();const h=get('homework');put('homework',{...h,done:el.checked});return}
 switch(d.a){case'tab':tab=d.v;render();break;
 case'd':{if(d.n=='0')cur=today;else{const x=new Date(cur+'T12:00');x.setDate(x.getDate()+ +d.n);cur=iso(x)}render();break}
@@ -120,9 +112,12 @@ case'hwn':hwForm();break;case'hw':hwForm(get('homework'));break;case'evn':evForm
 case'grn':grForm(id);break;case'gr':{const g=get('grades');grForm(g.sid,g);break}
 case'sbn':subForm();break;case'sb':subForm(get('subjects'));break;case'sl':slForm(+d.d,+d.p);break;
 case'in':case'up':{const em=$('#em').value,pw=$('#pw').value;const r=d.a=='in'?await sb.auth.signInWithPassword({email:em,password:pw}):await sb.auth.signUp({email:em,password:pw});st=r.error?'Fehler: '+r.error.message:(d.a=='up'?'Registriert. Bestätige ggf. die E-Mail, dann anmelden.':'Angemeldet');document.activeElement.blur();render();if(r.data?.session)sync();break}
-case'out':await sb.auth.signOut();st='Nicht angemeldet';render();break;case'sy':sync();break}});
+case'out':{await sync();if((!navigator.onLine||/Fehler/.test(st))&&!confirm('Die letzte Synchronisierung ist fehlgeschlagen. Nicht gesicherte Änderungen gehen beim Abmelden verloren. Trotzdem abmelden?'))break;await sb.auth.signOut();S=seed();persist();st='Nicht angemeldet';render();break}
+case'fg':{const em=$('#em').value;if(!em){st='Bitte zuerst die E-Mail eintragen';render();break}const r=await sb.auth.resetPasswordForEmail(em,{redirectTo:location.origin+location.pathname});st=r.error?'Fehler: '+r.error.message:'E-Mail zum Zurücksetzen wurde gesendet';render();break}
+case'dl':{if(!confirm('Alle Daten in der Cloud und auf diesem Gerät löschen? Das kann nicht rückgängig gemacht werden.'))break;const{data:{session}}=await sb.auth.getSession();if(!session){st='Zum Löschen zuerst anmelden';render();break}const r=await sb.from('app_state').delete().eq('user_id',session.user.id);if(r.error){st='Fehler: '+r.error.message}else{S=seed();S.uid=session.user.id;persist();st='Daten gelöscht'}render();break}
+case'sy':sync();break}});
 document.addEventListener('change',e=>{if(e.target.dataset.a=='sem'){S.cfg={sem:e.target.value,u:Date.now()};save()}});
-if(window.supabase&&window.CFG&&CFG.url){sb=supabase.createClient(CFG.url,CFG.key);sb.auth.onAuthStateChange(()=>setTimeout(sync,0))}
+if(window.supabase&&window.CFG&&CFG.url){sb=supabase.createClient(CFG.url,CFG.key);sb.auth.onAuthStateChange(ev=>{if(ev=='PASSWORD_RECOVERY')setTimeout(()=>form('Neues Passwort',[{k:'pw',l:'Neues Passwort (mindestens 6 Zeichen)',t:'password',x:'minlength=6 required'}],{},async o=>{const r=await sb.auth.updateUser({password:o.pw});st=r.error?'Fehler: '+r.error.message:'Passwort geändert';tab='ed';render()}),0);setTimeout(sync,0)})}
 addEventListener('online',sync);document.addEventListener('visibilitychange',()=>!document.hidden&&sync());
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
 render();sync();
